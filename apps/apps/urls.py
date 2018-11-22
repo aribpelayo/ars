@@ -15,12 +15,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import url , include
 from django.views.generic.base import RedirectView
+from django.views.generic.base import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('gallery/', include('gallery.urls', namespace='gallery')),
-    path('', RedirectView.as_view(url='gallery')),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('', include('gallery.urls', namespace='gallery')),
+    #path('', RedirectView.as_view(url='gallery')),
+    #url(r'^', include('gallery.urls')),
 ]
 
 from django.conf import settings

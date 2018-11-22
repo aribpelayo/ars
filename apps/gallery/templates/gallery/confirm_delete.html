@@ -1,4 +1,28 @@
-<form method="post">{% csrf_token %}
-    Are you sure you want to delete "{{ object }}" ?
-    <input type="submit" value="Submit" />
-</form>
+{% extends "gallery/header.html" %}
+
+{% block content %}
+<body>
+	{% load staticfiles %}
+	<br/>
+	<div class="row">
+	  <div class="col-md-2"></div>
+	  <div class="col-md-8 well" align="center">
+	  	<img src="{% static 'temp/'%}{{ object.name }}" class="center" alt=" " width="40%" height="40%"> 
+	  	<form method="post">
+		{% csrf_token %}
+		<br/><br/>
+		<p> <b> Confirm Delete: </b> </p>
+		<input class='btn btn-danger' type="submit" value="Delete" />
+		<a href='/update/' class='btn btn-primary'> Back </a>
+	</form>
+
+	  </div>
+	  <div class="col-md-2"></div>
+	</div>
+	
+</body>
+</html>
+{% endblock %}
+
+
+
