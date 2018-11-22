@@ -20,6 +20,8 @@ import zipfile, string, random, os, glob, json, sys, shutil
 
 visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='JLBpeohMs_TqahmkqLR_Tv74qxlxHCK-3s4x3B99Vrv4')
 #visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='PoCwOjaQ56Ze_LhoEgmv6fgxBwDJK66wsLEL5IWESdRK-3s4x3B99Vrv4')
+#HELLO GIT TEST
+
 
 class ImageForm(ModelForm):
     class Meta:
