@@ -109,7 +109,10 @@ def move(request,pk, template_name='gallery/form.html'):
 
 #Added Dev Code - Arib
 def index(request):
-    return render(request, 'gallery/home.html')
+    images = Image.objects.filter(retrain=1)
+    data = {}
+    data['object_list'] = images
+    return render(request, 'gallery/home.html', data)
 
 def snap(request):
   if request.POST and request.is_ajax():  
