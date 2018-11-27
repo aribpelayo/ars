@@ -11,17 +11,14 @@ from base64 import b64decode
 from django.views.decorators.csrf import csrf_exempt
 from shutil import copyfile
 from django.conf import settings
-from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
 from django.contrib import auth
 
 import zipfile, string, random, os, glob, json, sys, shutil
 
-visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='JLBpeohMs_TqahmkqLR_Tv74qxlxHCK-3s4x3B99Vrv4')
-#visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='PoCwOjaQ56Ze_LhoEgmv6fgxBwDJK66wsLEL5IWESdRK-3s4x3B99Vrv4')
-#HELLO GIT TEST
-
+#visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='JLBpeohMs_TqahmkqLR_Tv74qxlxHCK-3s4x3B99Vrv4')
+visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='c6IHWLhTl2g-sNwO09hKV5Kjm3BWLCyr4VJLpL2n_7_Y')
 
 class ImageForm(ModelForm):
     class Meta:
@@ -30,10 +27,8 @@ class ImageForm(ModelForm):
 
 @login_required
 def update(request, template_name='gallery/index.html'):
-    images = Image.objects.filter(retrain=1)
-    data = {}
-    data['object_list'] = images
-    return render(request, template_name, data)
+    data = notif()
+    return render(request, template_name, {'data':data})
 
 def image_create(request, template_name='gallery/form.html'):
     form = ImageForm(request.POST or None, request.FILES or None)
@@ -66,10 +61,23 @@ def classifyImage(Purl):
         return vClase, vScore
 
 @login_required
-def train(request, template_name='gallery/index.html'):
-        #classifiers = visual_recognition.list_classifiers(verbose=True).get_result()
-        #vResultClassifier=json.loads(json.dumps(classifiers, indent=2))
-        return HttpResponse("Image Retraining")
+def train(request, template_name='gallery/train.html'):
+    if request.POST and request.is_ajax():
+        _image = request.POST.get('image_id')
+        _dir = request.POST.get('dir')
+        Image.objects.filter(name=_image).delete()
+        os.remove(settings.TRAIN_ROOT + _dir +'\\'+ _image)
+        os.remove(settings.TMP_ROOT + _dir + '\\' + _image)
+        os.remove(settings.TMP_ROOT + _image)
+        return HttpResponse("done")
+    else:
+        obj = {}
+        data = notif()
+
+        for key in os.listdir(settings.TRAIN_ROOT):
+            for value in os.listdir(settings.TRAIN_ROOT + key):
+                obj.setdefault(key, []).append(value)
+        return render(request, template_name, {'obj':obj, 'data':data})
 
 @login_required
 def image_update(request, pk, template_name='gallery/form.html'):
@@ -82,22 +90,24 @@ def image_update(request, pk, template_name='gallery/form.html'):
 
 @login_required
 def image_delete(request, pk, template_name='gallery/confirm_delete.html'):
-    image = get_object_or_404(Image, pk=pk)   
+    image = get_object_or_404(Image, pk=pk) 
+    data = notif()  
     if request.method=='POST':
         image.delete()
-        os.remove(settings.TMP_ROOT+'\\'+image.suggested+'\\'+image.name)
-        os.remove(settings.TMP_ROOT+'\\'+image.name)
+        os.remove(settings.TMP_ROOT + image.suggested+'\\'+image.name)
+        os.remove(settings.TMP_ROOT + image.name)
         return redirect('gallery:update')
-    return render(request, template_name, {'object':image})    
+    
+    return render(request, template_name, {'object':image, 'data':data})   
 
 @login_required
 def move(request,pk, template_name='gallery/form.html'):
     image = get_object_or_404(Image,pk=pk)
     img   = image.image
     filename  = image.name
-    dst = settings.MEDIA_ROOT+'\\training\\' +image.suggested
+    dst = settings.TRAIN_ROOT + image.suggested
     if(not os.path.exists(dst)):
-        os.mkdir(os.path.join(settings.MEDIA_ROOT+'\\training\\', image.suggested))
+        os.mkdir(os.path.join(settings.TRAIN_ROOT, image.suggested))
     try:
         copyfile(img, dst +'\\' + filename)
         db = Image.objects.get(name=filename)
@@ -109,10 +119,8 @@ def move(request,pk, template_name='gallery/form.html'):
 
 #Added Dev Code - Arib
 def index(request):
-    images = Image.objects.filter(retrain=1)
-    data = {}
-    data['object_list'] = images
-    return render(request, 'gallery/home.html', data)
+    data = notif()
+    return render(request, 'gallery/home.html', {'data':data})
 
 def snap(request):
   if request.POST and request.is_ajax():  
@@ -145,7 +153,7 @@ def getImage(filePath):
 
 def classifyScreenshot(Purl):
     with open(Purl, 'rb') as images_file:
-        classes = visual_recognition.classify(images_file,threshold='0.5',owners=["me"]).get_result()
+        classes = visual_recognition.classify(images_file,threshold='0.9',owners=["me"]).get_result()
         vResult = json.loads(json.dumps(classes, indent=2))
         print(vResult)
 
@@ -174,28 +182,20 @@ def reclassify(request):
   if request.POST and request.is_ajax(): 
     dirname = request.POST.get('retData')
     path = settings.TMP_ROOT
-    #invalid = 'tmp_for_retrain'
-    #inc = os.path.join(settings.TMP_ROOT, invalid)
-    dst = os.path.join(path, dirname)
+    dst = os.path.join(path, dirname + '\\')
     image = getImage(path)
 
     if(os.path.exists(dst)):
-        copyfile(path + image, dst+'\\'+image)
+        copyfile(path + image, dst +image)
     else:
         os.mkdir(os.path.join(path, dirname))
-        copyfile(path + image, dst+'\\'+image)
+        copyfile(path + image, dst + image)
 
     db = Image.objects.get(name=image)
-    db.image = dst+'\\'+image
+    db.image = dst + image
     db.suggested = dirname
     db.retrain = 1
     db.save()
-
-    #if(os.path.exists(inc)):
-    #    shutil.move(path + image, inc+'\\'+image)
-    #else:
-    #    os.mkdir(os.path.join(settings.TMP_ROOT, invalid))
-    #    shutil.move(path + image, inc+'\\'+image)
 
     return HttpResponse('Done')
 
@@ -205,3 +205,9 @@ def timein(request):
 def logout(request):
     auth.logout(request)
     return render(request,'gallery/home.html')
+
+def notif():
+    data = {}
+    images = Image.objects.filter(retrain=1)
+    data['object_list'] = images
+    return data

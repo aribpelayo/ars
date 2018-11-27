@@ -131,5 +131,4 @@ TMP_ROOT = os.path.join(BASE_DIR, 'gallery\\static\\temp\\')
 TRAIN_ROOT = os.path.join(BASE_DIR, 'media\\training\\')
 ARCHIVE_ROOT = os.path.join(BASE_DIR, 'media\\archive\\')
 
-#LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/home/'

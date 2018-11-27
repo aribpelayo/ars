@@ -1,151 +1,44 @@
 {% extends "gallery/header.html" %}
+
 {% block content %}
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-
-
-div.gallery {
-    border: 1px solid #ccc;
-}
-
-div.gallery:hover {
-    border: 1px solid #777;
-}
-
-div.gallery img {
-    width: 100%;
-    height: 100%;
-}
-
-div.desc {
-    padding: 5px;
-    text-align: center;
-    font-size: 20px;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-.responsive {
-    padding: 0 6px;
-    float: left;
-    width: 24.99999%;
-}
-
-@media only screen and (max-width: 700px) {
-    .responsive {
-        width: 49.99999%;
-        margin: 6px 0;
-    }
-}
-
-@media only screen and (max-width: 500px) {
-    .responsive {
-        width: 100%;
-    }
-}
-
-.clearfix:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-
-.div {
-    width: 300px;
-    height: 100px;
-    padding: 50px;
-    border: 1px solid red;}
-
-.dropbtn {
-    background-color: #B20700;
-    color: white;
-    padding: 16px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-}
-
-.dropdown {
-    position: relative;
-    display: inline-block;
-    
-}
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
-}
-
-.dropdown-content a {
-    color: black;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-}
-
-.dropdown-content a:hover {background-color: #f1f1f1}
-
-.dropdown:hover .dropdown-content {
-    
-    display: block;
-}
-
-.dropdown:hover .dropbtn {
-    background-color: rgb(231, 97, 93);
-
-}
-.main {
-    margin-left: 0px; /* Same as the width of the sidenav */
-    font-size: 28px; /* Increased text to enable scrolling */
-    padding: 0px 10px;
-}
-
-</style>
-</head>
-<body>
-<div class="main">
-
-        <h1>Images</h1>
-
-        <a href="{% url 'gallery:image_new' %}">New</a>
-
-        
-    {% for image in object_list %}
-<div class="responsive">
-  <div class="gallery">
-    <a target="_blank" href="{{image.image.url}}">
-      <img src="{{image.image.url}}" alt=" " width="50px" height="50px">
-    </a>
-    <div class="desc">Name: {{image.name }}</div>
-    <div class="desc">Category: {{image.resWatsonClase}}</div>
-    <div class="desc">Score: {{image.resWatsonScore}}</div>
-    <center>
-            <!-- <a href="{% url 'gallery:image_edit' image.pk %}">Edit |</a> -->
-            <a href="{% url 'gallery:image_delete' image.pk %}">Delete</a>
-            <br></br>
-            <h1>Classify</h1>
-            <a href="{% url 'gallery:move' image.pk %}">Kathryn | </a>
-            <a href="{% url 'gallery:move2' image.pk %}">Liza</a>
-    </center>
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'gallery/css/train.css' %}">
+<!-- Modal -->
+<div class="modal fade" id="modalRemove" tabindex="-1" role="dialog" aria-labelledby="modalRemoveLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Delete Successful</h5>
+        <button onclick="javascript:window.location='/train/'" type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Image is successfully removed.
+      </div>
+      <div class="modal-footer">
+        <button onclick="javascript:window.location='/train/'" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
   </div>
 </div>
+
+<h5 class="text-danger"> <b> *** Minimum of 10 images per class to retrain. <br/> *** Click (x) to remove  </b> </h5>
+    {% for x , y in obj.items %}
+    <div class = 'holder'>
+        <p> <span id='cname' data-sid="{{x}}"> Class Name: <b> {{ x }} </b> </span> - Number of Images: <span id='count'> <em> {{ y|length}} </em> </span></p>
+         {% for z in y %}
+            <div class="img-wrap">
+            <span class="close">&times;</span>
+            <img src="/media/training/{{x}}/{{z}}" class="imgs" data-id="{{z}}" width="80px" height="80px" onerror="this.style.display='none'">
+            </div>
+         {% endfor %}
+         {% if y|length >= 5 %}
+            <button type="button" class="btn btn-primary" onclick="train"> Train </button>
+         {% else %}
+            <button type="button" class="btn btn-warning" disabled> Train </button>
+         {% endif %}
     {% endfor %}
-
-        
-
-<div class="clearfix"></div>
-
-
-</div>
-</body>
-</html>
-
+    </div>
+<script src="{% static 'gallery/js/train.js' %}"></script>
 {% endblock %}
