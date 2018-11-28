@@ -65,11 +65,40 @@ def train(request, template_name='gallery/train.html'):
     if request.POST and request.is_ajax():
         _image = request.POST.get('image_id')
         _dir = request.POST.get('dir')
-        Image.objects.filter(name=_image).delete()
-        os.remove(settings.TRAIN_ROOT + _dir +'\\'+ _image)
-        os.remove(settings.TMP_ROOT + _dir + '\\' + _image)
-        os.remove(settings.TMP_ROOT + _image)
-        return HttpResponse("done")
+        _basePath = settings.TRAIN_ROOT
+        if(request.POST.get('rmv') == '1'):
+            Image.objects.filter(name=_image).delete()
+            os.remove(_basePath + _dir +'\\'+ _image)
+            os.remove(settings.TMP_ROOT + _dir + '\\' + _image)
+            os.remove(settings.TMP_ROOT + _image)
+            return HttpResponse("done")
+        else:
+            _archivePath = settings.ARCHIVE_ROOT
+            _dstFile = _archivePath + _dir
+            _zipFile = _archivePath + _dir + '.zip'
+            if (os.path.isfile(_zipFile)):
+                os.remove(_zipFile)
+
+            myzip = shutil.make_archive(_dstFile, 'zip', _basePath, _dir) 
+            
+            status = None
+            classifiers = visual_recognition.list_classifiers(verbose=True).get_result()
+            vResultClassifier=json.loads(json.dumps(classifiers, indent=2))
+            for vClassifier in vResultClassifier['classifiers']:
+                vC =vResultClassifier['classifiers'][0]['status']
+                status = str(vC)
+                print(status)
+            if status == "retraining" or status == "failed":
+                return HttpResponse("error")
+            elif status == "ready":
+                name = _dir
+                kwargs = name + '_positive_examples'
+                with open(myzip, 'rb') as name:
+                    classes = visual_recognition.update_classifier(classifier_id='AIS_1412372771',
+                        kwargs=name).get_result()
+                    result=json.loads(json.dumps(classes, indent=2))
+                    return HttpResponse("train")
+            return HttpResponse("train")
     else:
         obj = {}
         data = notif()
@@ -117,7 +146,7 @@ def move(request,pk, template_name='gallery/form.html'):
     except:
         return redirect('gallery:update')
 
-#Added Dev Code - Arib
+
 def index(request):
     data = notif()
     return render(request, 'gallery/home.html', {'data':data})
@@ -155,8 +184,6 @@ def classifyScreenshot(Purl):
     with open(Purl, 'rb') as images_file:
         classes = visual_recognition.classify(images_file,threshold='0.9',owners=["me"]).get_result()
         vResult = json.loads(json.dumps(classes, indent=2))
-        print(vResult)
-
         try:
             vClase = vResult['images'][0]['classifiers'][0]['classes'][0]['class']
             vScore = vResult['images'][0]['classifiers'][0]['classes'][0]['score']

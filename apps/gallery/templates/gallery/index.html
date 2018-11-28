@@ -9,8 +9,14 @@
     <div class="responsive">
       <div class="gallery">
           <img src="{% static 'temp/'%}{{image.name}}" class="center" alt=" " width="50px" height="50px">
-        <h4 class="text-center"> Currently Identified as: <b><i> {{image.clase}} </i></b></h4>
-        <h4  class="text-center"> Percentage: <b><i> {{image.score}}% </i></b></h4>
+          {% if image.clase != 'null' %}
+          <h4 class="text-center"> Currently Identified as: <b><i> {{image.clase}} </i></b></h4>
+          <h4  class="text-center"> Percentage: <b><i> {{image.score}}% </i></b></h4>
+          {% else %}
+          <h4 class="text-center"> Currently Identified as: <b> - </b></h4>
+          <h4  class="text-center"> Percentage: <b> - </b></h4>    
+          {% endif%}
+        
         <center>
             <a href="{% url 'gallery:image_delete' image.pk %}" class='btn btn-danger'>Delete</a>
             <br/><br/>
