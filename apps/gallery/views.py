@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from django.shortcuts import render,redirect,get_object_or_404
 from django.forms import ModelForm
-from gallery.models import Image
+from gallery.models import Image, Time
 from watson_developer_cloud import VisualRecognitionV3
 from json import dumps
 from zipfile import *
@@ -14,8 +14,9 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
 from django.contrib import auth
+from django.core import serializers
 
-import zipfile, string, random, os, glob, json, sys, shutil
+import zipfile, string, random, os, json, shutil, datetime
 
 #visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='JLBpeohMs_TqahmkqLR_Tv74qxlxHCK-3s4x3B99Vrv4')
 visual_recognition = VisualRecognitionV3('2018-03-19',iam_apikey='c6IHWLhTl2g-sNwO09hKV5Kjm3BWLCyr4VJLpL2n_7_Y')
@@ -87,15 +88,15 @@ def train(request, template_name='gallery/train.html'):
             for vClassifier in vResultClassifier['classifiers']:
                 vC =vResultClassifier['classifiers'][0]['status']
                 status = str(vC)
-                print(status)
             if status == "retraining" or status == "failed":
                 return HttpResponse("error")
             elif status == "ready":
                 name = _dir
-                kwargs = name + '_positive_examples'
+                class_name = name + '_positive_examples'
                 with open(myzip, 'rb') as name:
-                    classes = visual_recognition.update_classifier(classifier_id='AIS_1412372771',
-                        kwargs=name).get_result()
+                    classes = visual_recognition.update_classifier(
+                            classifier_id='AIS_1412372771',
+                            **{class_name:name}).get_result()
                     result=json.loads(json.dumps(classes, indent=2))
                     return HttpResponse("train")
             return HttpResponse("train")
@@ -105,8 +106,37 @@ def train(request, template_name='gallery/train.html'):
 
         for key in os.listdir(settings.TRAIN_ROOT):
             for value in os.listdir(settings.TRAIN_ROOT + key):
-                obj.setdefault(key, []).append(value)
+                obj.setdefault(key, []).append(value)   
         return render(request, template_name, {'obj':obj, 'data':data})
+
+@login_required
+def batchtrain(request):
+    # _archivePath = settings.ARCHIVE_ROOT
+    # _dstFile = _archivePath + _dir
+    # _zipFile = _archivePath + _dir + '.zip'
+    # if (os.path.isfile(_zipFile)):
+    #     os.remove(_zipFile)
+
+    # myzip = shutil.make_archive(_dstFile, 'zip', _basePath, _dir) 
+    
+    # status = None
+    # classifiers = visual_recognition.list_classifiers(verbose=True).get_result()
+    # vResultClassifier=json.loads(json.dumps(classifiers, indent=2))
+    # for vClassifier in vResultClassifier['classifiers']:
+    #     vC =vResultClassifier['classifiers'][0]['status']
+    #     status = str(vC)
+    # if status == "retraining" or status == "failed":
+    #     return HttpResponse("error")
+    # elif status == "ready":
+    #     name = _dir
+    #     class_name = name + '_positive_examples'
+    #     with open(myzip, 'rb') as name:
+    #         classes = visual_recognition.update_classifier(
+    #                 classifier_id='AIS_1412372771',
+    #                 **{class_name:name}).get_result()
+    #         result=json.loads(json.dumps(classes, indent=2))
+    #         return HttpResponse("train")  
+    return HttpResponse("batch")
 
 @login_required
 def image_update(request, pk, template_name='gallery/form.html'):
@@ -126,7 +156,6 @@ def image_delete(request, pk, template_name='gallery/confirm_delete.html'):
         os.remove(settings.TMP_ROOT + image.suggested+'\\'+image.name)
         os.remove(settings.TMP_ROOT + image.name)
         return redirect('gallery:update')
-    
     return render(request, template_name, {'object':image, 'data':data})   
 
 @login_required
@@ -170,7 +199,14 @@ def snap(request):
     db.save();
 
     vClasif = classRetrieve()
-    return HttpResponse(json.dumps({ 'clase':vClase ,'score': str(round((vScore * 100), 2)), 'classif':vClasif }), content_type="application/json")
+
+    record = {}
+    data = serializers.serialize("json", Time.objects.filter(name=vClase, date=datetime.date.today()))
+    record = data
+    print(record)
+
+
+    return HttpResponse(json.dumps({'clase':vClase ,'score': str(round((vScore * 100), 2)), 'classif':vClasif, 'record': record}), content_type="application/json")
 
 def id_generator(size=8, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -182,7 +218,7 @@ def getImage(filePath):
 
 def classifyScreenshot(Purl):
     with open(Purl, 'rb') as images_file:
-        classes = visual_recognition.classify(images_file,threshold='0.9',owners=["me"]).get_result()
+        classes = visual_recognition.classify(images_file,threshold='0.5',owners=["me"]).get_result()
         vResult = json.loads(json.dumps(classes, indent=2))
         try:
             vClase = vResult['images'][0]['classifiers'][0]['classes'][0]['class']
@@ -227,7 +263,20 @@ def reclassify(request):
     return HttpResponse('Done')
 
 def timein(request):
-    return render(request, 'gallery/success.html')
+    if request.POST and request.is_ajax():
+        db = Time(name=request.POST.get('clase'),
+            datetime=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            date=datetime.date.today(),
+            Timein=datetime.datetime.now().time().strftime('%H:%M:%S'));
+        db.save()
+        return HttpResponse("in")
+
+def timeout(request):
+    if request.POST and request.is_ajax():
+        db = Time.objects.get(name=request.POST.get('clase'), date=datetime.date.today())
+        db.Timeout = datetime.datetime.now().time().strftime('%H:%M:%S')
+        db.save()
+    return HttpResponse("out")    
 
 def logout(request):
     auth.logout(request)

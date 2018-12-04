@@ -62,8 +62,10 @@
   </div>
 </div>
 
+<button onclick="javascript:window.location='/batchtrain/'" type="button" class="btn btn-success" id='batch' data-dismiss="modal">Batch Train</button>
 <h5 class="text-danger"> <b> *** Minimum of 10 images per class to retrain. <br/> *** Click (x) to remove  </b> </h5>
     {% for x , y in obj.items %}
+
     <div class = 'holder'>
         <p> <span id='cname' data-sid="{{x}}"> Class Name: <b> {{ x }} </b> </span> - Number of Images: <span id='count'> <em> {{ y|length}} </em> </span></p>
          {% for z in y %}

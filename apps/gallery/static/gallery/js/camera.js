@@ -16,9 +16,17 @@
 
               // successCallback
               function(localMediaStream) {
-                 video = document.querySelector('video');
-                 video.src = window.URL.createObjectURL(localMediaStream);
-                 webcamStream = localMediaStream;
+                  var sourceObject = HTMLMediaElement.srcObject;
+                  HTMLMediaElement.srcObject = sourceObject;
+
+                  video = document.querySelector('video');
+                  try {
+                    video.srcObject = localMediaStream;
+                  } catch (error) {
+                    video.src = URL.createObjectURL(localMediaStream);
+                  }
+                                    //video.src = window.URL.createObjectURL(localMediaStream);
+                  webcamStream = localMediaStream;
               },
 
               function(err) {
@@ -87,11 +95,32 @@
                 $("#class").text('This person is not found in database.');
                 $("#score").text('Please contact administrator');
               }else{
-                $("#class").text('Welcome, ' +data.clase);
+                $("#class").text('Welcome, '+data.clase);
+                $("#record").text(data.clase)
                 $("#score").text('Your image score is about ' +data.score+'%');
-                $('#timein').show();
+
+                var obj = JSON.parse(data.record);
+                if(Object.keys(obj).length == 0){
+                  $('#timein').show();
+                  $("#logs").hide()
+                  $('#timeout').hide()
+                }else{
+                    if(obj[0].fields.Timein == null){
+                      $('#timein').show();
+                      $("#logs").hide()
+                      $('#timeout').hide();
+                    }else if (obj[0].fields.Timein != null && obj[0].fields.Timeout == null){
+                      $('#timein').hide();
+                      $("#logs").hide()
+                      $('#timeout').show();
+                    }else{
+                      $("#timein").hide()
+                      $('#timeout').hide();
+                      $("#logs").text("You have completed your timelogs for today.")
+                    }
+                  }
               }
-              
+
               var output = [];
               $.each(data.classif, function(key, value)
               {

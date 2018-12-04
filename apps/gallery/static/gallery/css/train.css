@@ -34,3 +34,11 @@
 .img-wrap:hover .close {
     opacity: 1;
 }
+
+#batch{
+    display:block;
+    float:right;
+    text-align:center;
+    margin-right: 1%;
+    margin-top: .5%;
+}
